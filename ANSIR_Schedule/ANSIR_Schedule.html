@@ -1,0 +1,2246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ANSIR Instrument Booking Calendar</title>
+    <style>
+        /* CSS Variables for easy customization */
+        :root {
+            /* Colors - Royal Blue Theme */
+            --primary-bg: #282572;
+            --primary-hover: #1f1d5a;
+            --primary-active: #161344;
+            --category-bg: #1e1a5c;
+            
+            /* Neutral Colors */
+            --header-bg: #f8f9fa;
+            --border-color: #dee2e6;
+            --text-color: #495057;
+            --white: #ffffff;
+            --light-gray: #e9ecef;
+            --medium-gray: #868e96;
+            --dark-gray: #adb5bd;
+            
+            /* Status Colors */
+            --available-bg: #d4edda;
+            --available-hover: #c3e6cb;
+            --background-light: #f5f5f5;
+            --deployed-gradient: linear-gradient(135deg, #5bc0de 0%, #46b8da 100%);
+            --deployed-border: #31b0d5;
+            --availability-color: #90EE90;
+            --today-color: #dc3545;
+            --tooltip-bg: #333;
+            
+            /* Typography */
+            --font-family-sans: 'Calibre', Arial, sans-serif;
+            --font-family-serif: 'Karmina', Georgia, serif;
+            --font-weight-normal: 400;
+            --font-weight-bold: 700;
+            --font-size-xs: 10px;
+            --font-size-sm: 12px;
+            --font-size-base: 14px;
+            --font-size-lg: 15px;
+            --font-size-xl: 16px;
+            --font-size-2xl: 20px;
+            --font-size-3xl: 28px;
+            
+            /* Spacing */
+            --month-width: 60px;
+            --border-radius-sm: 3px;
+            --border-radius-md: 4px;
+            --border-radius-lg: 6px;
+            --border-radius-xl: 8px;
+            
+            /* Transitions */
+            --transition-fast: 0.2s;
+            --transition-normal: 0.3s;
+        }
+
+        body {
+            font-family: var(--font-family-serif);
+            font-weight: var(--font-weight-normal);
+            background: var(--background-light);
+            margin: 0;
+            padding: 20px;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            text-rendering: optimizeLegibility;
+        }
+
+        body, .booking-table-left, .booking-table-right, .instrument-count, .instrument-label, .today-indicator > div {
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            text-rendering: optimizeLegibility;
+        }
+
+        /* Only use custom heading font for these classes */
+        .category-title, .accordion-title {
+            font-family: var(--font-family-sans);
+            font-weight: var(--font-weight-bold);
+        }
+
+        /* Main container */
+        .main-container {
+            max-width: 100%;
+            margin: 0 auto;
+        }
+
+        /* Category accordion (outer level) */
+        .category-accordion {
+            background: var(--white);
+            border-radius: var(--border-radius-xl);
+            margin-bottom: 15px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .category-header {
+            background: var(--category-bg);
+            color: var(--white);
+            padding: 15px;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: background-color var(--transition-normal) ease;
+            user-select: none;
+        }
+
+        .category-header:hover {
+            background: var(--primary-hover);
+        }
+
+        .category-header.active {
+            background: var(--primary-active);
+        }
+
+        .category-info {
+            flex: 1;
+        }
+
+        .category-title {
+            font-size: var(--font-size-2xl);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .category-subtitle {
+            font-size: var(--font-size-base);
+            opacity: 0.9;
+            margin-top: 4px;
+        }
+
+        .category-toggle {
+            font-size: var(--font-size-3xl);
+            transition: transform var(--transition-normal) ease;
+            margin-left: 20px;
+        }
+
+        .category-header.active .category-toggle {
+            transform: rotate(180deg);
+        }
+
+        .category-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height var(--transition-normal) ease;
+            background: var(--header-bg);
+        }
+
+        .category-content.active {
+            max-height: 4000px;
+        }
+
+        /* Instrument accordions (inner level) */
+        .accordion-container {
+            padding: 10px;
+        }
+
+        .accordion-item {
+            background: var(--white);
+            border-radius: var(--border-radius-lg);
+            margin-bottom: 8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            overflow: hidden;
+            transition: box-shadow var(--transition-normal) ease;
+        }
+
+        .accordion-item:hover {
+            box-shadow: 0 3px 6px rgba(0,0,0,0.15);
+        }
+
+        .accordion-header {
+            background: var(--primary-bg);
+            color: var(--white);
+            padding: 12px 12px;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: background-color var(--transition-normal) ease;
+            user-select: none;
+        }
+
+        .accordion-header:hover {
+            background: var(--primary-hover);
+        }
+
+        .accordion-header.active {
+            background: var(--primary-active);
+        }
+
+        .accordion-title {
+            font-size: var(--font-size-xl);
+            letter-spacing: 0.5px;
+        }
+
+        .accordion-subtitle {
+            font-size: var(--font-size-lg);
+            opacity: 0.9;
+            margin-top: 5px;
+        }
+
+        .instrument-stat,
+        .category-stat {
+            font-weight: 300;
+            color: rgba(255, 255, 255, 0.8);
+            font-size: var(--font-size-base);
+        }
+
+        .accordion-toggle {
+            font-size: var(--font-size-2xl);
+            transition: transform var(--transition-normal) ease;
+        }
+
+        .accordion-header.active .accordion-toggle {
+            transform: rotate(180deg);
+        }
+
+        .accordion-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height var(--transition-normal) ease;
+        }
+
+        .accordion-content.active {
+            max-height: 1000px;
+        }
+
+        /* Control buttons */
+        .controls {
+            text-align: right;
+            padding: 15px 20px;
+            background: transparent;
+            margin-bottom: 20px;
+        }
+
+        .control-btn {
+            background: var(--primary-bg);
+            color: var(--white);
+            border: none;
+            padding: 8px 16px;
+            margin-left: 10px;
+            border-radius: var(--border-radius-md);
+            cursor: pointer;
+            font-size: var(--font-size-sm);
+            transition: background-color var(--transition-fast);
+        }
+
+        .control-btn:hover {
+            background: var(--primary-hover);
+        }
+
+        /* Today indicator line */
+        .today-indicator {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background: var(--today-color);
+            z-index: 20;
+            pointer-events: none;
+        }
+
+        .today-indicator::before {
+            display: none !important;
+        }
+
+        .booking-calendar {
+            width: 100%;
+            padding: 20px;
+            position: relative;
+        }
+
+        /* Table styles */
+        .booking-table {
+            width: 100%;
+            min-width: 1600px;
+            border-collapse: collapse;
+            background: var(--white);
+            font-size: var(--font-size-sm);
+            border: 1px solid var(--border-color);
+        }
+
+        .booking-table th {
+            background: var(--header-bg);
+            border: 1px solid var(--border-color);
+            padding: 8px 4px;
+            text-align: center;
+            color: var(--text-color);
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        .experiment-col {
+            background: var(--header-bg);
+            border-right: 2px solid var(--border-color);
+            padding: 12px 8px;
+            color: var(--text-color);
+            text-align: left;
+            width: 400px;
+            min-width: 110px;
+            max-width: 150px;
+            white-space: normal;
+            overflow: hidden;
+            line-height: 1.2;
+            max-height: 2.4em;
+        }
+
+        .booking-table td {
+            border: 1px solid var(--border-color);
+            padding: 0;
+            height: 45px;
+            text-align: center;
+            vertical-align: middle;
+            position: relative;
+            background: var(--white);
+            width: var(--month-width);
+            min-width: var(--month-width);
+        }
+
+        /* Status classes */
+        .available {
+            background: var(--available-bg);
+            transition: background-color var(--transition-fast);
+        }
+
+        .available-merged {
+            background: var(--available-bg);
+            border: 2px solid var(--border-color) !important;
+            text-align: center;
+            vertical-align: middle;
+        }
+
+        /* Merged cells */
+        .booking-merged {
+            position: relative;
+            text-align: center;
+            vertical-align: middle;
+            font-weight: bold;
+            color: var(--white);
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+            font-size: var(--font-size-base);
+            padding: 8px;
+            border: 2px solid !important;
+        }
+
+        /* Remove text shadow from specific elements */
+        .experiment-col,
+        .month-header,
+        .year-divider,
+        .accordion-subtitle,
+        .category-subtitle {
+            text-shadow: none !important;
+        }
+
+        .booking-merged.deployed {
+            background: var(--deployed-gradient);
+            border: 2px solid var(--deployed-border);
+        }
+
+        .availability-merged {
+            background: var(--availability-color) !important;
+            background-color: var(--availability-color) !important;
+            border: 1px solid var(--border-color) !important;
+            color: var(--text-color);
+            text-shadow: none;
+        }
+
+        .booking-merged.availability-merged {
+            background: var(--availability-color) !important;
+            background-color: var(--availability-color) !important;
+            color: var(--text-color);
+        }
+
+        /* Instrument display */
+        .instrument-count {
+            display: block;
+            font-size: var(--font-size-xl);
+            margin-bottom: 2px;
+        }
+
+        .instrument-label {
+            display: block;
+            font-size: var(--font-size-xs);
+            text-transform: uppercase;
+            letter-spacing: 0.75px;
+            opacity: 0.9;
+        }
+
+        /* Special rows */
+        .availability-row {
+            background: var(--header-bg);
+            border-top: 2px solid white;
+        }
+
+        .availability-row .experiment-col {
+            background: var(--light-gray);
+        }
+
+        .month-header {
+            background: var(--light-gray) !important;
+            font-weight: bold;
+            border-bottom: 2px solid var(--dark-gray);
+            width: var(--month-width);
+            min-width: var(--month-width);
+        }
+
+        .year-divider {
+            background: var(--medium-gray) !important;
+            color: black;
+            font-weight: bold;
+            font-size: var(--font-size-base);
+        }
+
+        /* Tooltip */
+        .booking-tooltip {
+            position: fixed;
+            max-width: 400px;
+            box-sizing: border-box;
+            z-index: 9999;
+            background: var(--tooltip-bg);
+            color: var(--white);
+            padding: 8px 12px;
+            border-radius: var(--border-radius-md);
+            font-size: var(--font-size-sm);
+            display: none;
+            white-space: normal;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            :root {
+                --month-width: 40px;
+            }
+            
+            .booking-table {
+                font-size: var(--font-size-xs);
+                min-width: 1200px;
+            }
+            
+            .experiment-col {
+                width: 350px;
+                min-width: 350px;
+                max-width: 400px;
+                padding: 8px 6px;
+                font-size: 11px;
+            }
+
+            .category-title {
+                font-size: 11px;
+            }
+
+            .accordion-title {
+                font-size: var(--font-size-base);
+            }
+
+            .accordion-subtitle,
+            .category-subtitle {
+                font-size: var(--font-size-sm);
+            }
+
+            .controls {
+                text-align: center;
+            }
+
+            .control-btn {
+                font-size: var(--font-size-sm);
+                padding: 6px 12px;
+                margin: 2px;
+            }
+        }
+        .calendar-flex-container {
+            display: flex;
+            width: auto;
+        }
+        .calendar-left {
+            flex: 0 0 180px;
+            max-width: 180px;
+            min-width: 110px;
+            background: var(--white);
+            border-right: 2px solid var(--border-color);
+            box-shadow: 2px 0 4px rgba(40,37,114,0.04);
+            z-index: 3;
+            position: static;
+            overflow: hidden;
+        }
+        .calendar-right {
+            flex: 1 1 0%;
+            overflow-x: hidden;
+            position: relative;
+            width: 100%;
+        }
+        .calendar-right-scroll {
+            width: 100%;
+            overflow-x: auto;
+            position: relative;
+        }
+        .booking-table-left {
+            width: 100%;
+            border-collapse: collapse;
+            background: var(--header-bg);
+        }
+        .booking-table-right {
+            min-width: 1600px;
+            border-collapse: collapse;
+            background: var(--white);
+        }
+        .booking-table-left th, .booking-table-left td {
+            border: 1px solid var(--border-color);
+            padding: 8px 6px;
+            color: var(--text-color);
+            background: var(--white);
+            text-align: center;
+            vertical-align: middle;
+            font-size: var(--font-size-base);
+            white-space: normal;
+            overflow: hidden;
+            line-height: 1.2;
+            max-height: 2.4em;
+            box-sizing: border-box;
+        }
+        .booking-table-right th, .booking-table-right td {
+            border: 1px solid var(--border-color);
+            padding: 8px 6px;
+            height: 45px;
+            text-align: center;
+            vertical-align: middle;
+            background: var(--white);
+            font-size: var(--font-size-base);
+            box-sizing: border-box;
+        }
+        .calendar-left::-webkit-scrollbar {
+            display: none;
+        }
+        .calendar-left {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+        .calendar-flex-container + .calendar-flex-container {
+            margin-top: 10px;
+        }
+        .booking-table-left thead tr:first-child th {
+            border: none;
+        }
+
+        .booking-table-right td:not(.booking-merged):not(.available-merged):not(.availability-merged):hover {
+            background: var(--available-hover);
+            cursor: pointer;
+        }
+
+        /* Only show hover for experiment merged cells */
+        .booking-table-right td.booking-merged:hover {
+            background: var(--available-hover);
+            cursor: pointer;
+        }
+
+        .instrument-count,
+        .instrument-label {
+            padding: 0;
+            margin: 0;
+            line-height: 1.1;
+            box-sizing: border-box;
+        }
+
+        .today-indicator > div {
+            padding: 2px 6px !important;
+            line-height: 1.2 !important;
+            min-height: 0 !important;
+            box-sizing: border-box;
+        }
+    </style>
+</head>
+<body>
+    <div class="main-container">
+        <!-- Controls -->
+        <div class="controls">
+            <button class="control-btn" onclick="expandAll()">Expand All</button>
+            <button class="control-btn" onclick="collapseAll()">Collapse All</button>
+        </div>
+
+        <!-- SEISMIC RECORDERS Category -->
+        <div class="category-accordion">
+            <div class="category-header" onclick="toggleCategory(this)">
+                <div class="category-info">
+                    <div class="category-title">Seismic Recorders</div>
+                    <div class="category-subtitle">3 instrument types</div>
+                </div>
+                <div class="category-toggle">▼</div>
+            </div>
+            <div class="category-content">
+                <div class="accordion-container">
+                    <!-- ANU TerraSAWR -->
+                    <div class="accordion-item">
+                        <div class="accordion-header" onclick="toggleAccordion(this)">
+                            <div>
+                                <div class="accordion-title">ANU TerraSAWR</div>
+                                <div class="accordion-subtitle"></div>
+                            </div>
+                            <div class="accordion-toggle">▼</div>
+                        </div>
+                        <div class="accordion-content">
+                            <div class="booking-calendar">
+                                <!-- Example for one instrument (TerraSAWR) -->
+                                <div class="calendar-flex-container">
+                                  <div class="calendar-left">
+                                    <table class="booking-table-left" id="terraSAWR-table-left"></table>
+                                  </div>
+                                  <div class="calendar-right">
+                                    <div class="calendar-right-scroll">
+                                      <table class="booking-table-right" id="terraSAWR-table-right"></table>
+                                    </div>
+                                  </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ANU LPR200 (AUS) -->
+                    <div class="accordion-item">
+                        <div class="accordion-header" onclick="toggleAccordion(this)">
+                            <div>
+                                <div class="accordion-title">ANU LPR200 (AUS)</div>
+                                <div class="accordion-subtitle">167 instruments (24 under maintenance)</div>
+                            </div>
+                            <div class="accordion-toggle">▼</div>
+                        </div>
+                        <div class="accordion-content">
+                            <div class="booking-calendar">
+                                <div class="calendar-flex-container">
+                                  <div class="calendar-left">
+                                    <table class="booking-table-left" id="lpr200AUS-table-left"></table>
+                                  </div>
+                                  <div class="calendar-right">
+                                    <div class="calendar-right-scroll">
+                                      <table class="booking-table-right" id="lpr200AUS-table-right"></table>
+                                    </div>
+                                  </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ANU LPR200 (NZ) -->
+                    <div class="accordion-item">
+                        <div class="accordion-header" onclick="toggleAccordion(this)">
+                            <div>
+                                <div class="accordion-title">ANU LPR200 (NZ)</div>
+                                <div class="accordion-subtitle">26 instruments (0 under maintenance)</div>
+                            </div>
+                            <div class="accordion-toggle">▼</div>
+                        </div>
+                        <div class="accordion-content">
+                            <div class="booking-calendar">
+                                <div class="calendar-flex-container">
+                                  <div class="calendar-left">
+                                    <table class="booking-table-left" id="lpr200NZ-table-left"></table>
+                                  </div>
+                                  <div class="calendar-right">
+                                    <div class="calendar-right-scroll">
+                                      <table class="booking-table-right" id="lpr200NZ-table-right"></table>
+                                    </div>
+                                  </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Nanometrics Centaur (indoor/vault only) -->
+                    <div class="accordion-item">
+                        <div class="accordion-header" onclick="toggleAccordion(this)">
+                            <div>
+                                <div class="accordion-title">Nanometrics Centaur (indoor/vault only)</div>
+                                <div class="accordion-subtitle">3 instruments (0 under maintenance)</div>
+                            </div>
+                            <div class="accordion-toggle">▼</div>
+                        </div>
+                        <div class="accordion-content">
+                            <div class="booking-calendar">
+                                <div class="calendar-flex-container">
+                                  <div class="calendar-left">
+                                    <table class="booking-table-left" id="nanometricsCentaur-table-left"></table>
+                                  </div>
+                                  <div class="calendar-right">
+                                    <div class="calendar-right-scroll">
+                                      <table class="booking-table-right" id="nanometricsCentaur-table-right"></table>
+                                    </div>
+                                  </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- SEISMOMETERS Category -->
+        <div class="category-accordion">
+            <div class="category-header" onclick="toggleCategory(this)">
+                <div class="category-info">
+                    <div class="category-title">Seismometers</div>
+                    <div class="category-subtitle">5 instrument types</div>
+                </div>
+                <div class="category-toggle">▼</div>
+            </div>
+            <div class="category-content">
+                <div class="accordion-container">
+                    <!-- Nanometrics Trillium Compact 120s (AUS) -->
+                    <div class="accordion-item">
+                        <div class="accordion-header" onclick="toggleAccordion(this)">
+                            <div>
+                                <div class="accordion-title">Nanometrics Trillium Compact 120s (AUS)</div>
+                                <div class="accordion-subtitle">120 instruments (1 under maintenance)</div>
+                            </div>
+                            <div class="accordion-toggle">▼</div>
+                        </div>
+                        <div class="accordion-content">
+                            <div class="booking-calendar">
+                                <div class="calendar-flex-container">
+                                  <div class="calendar-left">
+                                    <table class="booking-table-left" id="nanometrics120sAUS-table-left"></table>
+                                  </div>
+                                  <div class="calendar-right">
+                                    <div class="calendar-right-scroll">
+                                      <table class="booking-table-right" id="nanometrics120sAUS-table-right"></table>
+                                    </div>
+                                  </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Nanometrics Trillium Compact 120s (NZ) -->
+                    <div class="accordion-item">
+                        <div class="accordion-header" onclick="toggleAccordion(this)">
+                            <div>
+                                <div class="accordion-title">Nanometrics Trillium Compact 120s (NZ)</div>
+                                <div class="accordion-subtitle">5 instruments (0 under maintenance)</div>
+                            </div>
+                            <div class="accordion-toggle">▼</div>
+                        </div>
+                        <div class="accordion-content">
+                            <div class="booking-calendar">
+                                <div class="calendar-flex-container">
+                                  <div class="calendar-left">
+                                    <table class="booking-table-left" id="nanometrics120sNZ-table-left"></table>
+                                  </div>
+                                  <div class="calendar-right">
+                                    <div class="calendar-right-scroll">
+                                      <table class="booking-table-right" id="nanometrics120sNZ-table-right"></table>
+                                    </div>
+                                  </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Nanometrics Trillium Compact Horizon 120s -->
+                    <div class="accordion-item">
+                        <div class="accordion-header" onclick="toggleAccordion(this)">
+                            <div>
+                                <div class="accordion-title">Nanometrics Trillium Compact Horizon 120s</div>
+                                <div class="accordion-subtitle">12 instruments (0 under maintenance)</div>
+                            </div>
+                            <div class="accordion-toggle">▼</div>
+                        </div>
+                        <div class="accordion-content">
+                            <div class="booking-calendar">
+                                <div class="calendar-flex-container">
+                                  <div class="calendar-left">
+                                    <table class="booking-table-left" id="nanometricsH120s-table-left"></table>
+                                  </div>
+                                  <div class="calendar-right">
+                                    <div class="calendar-right-scroll">
+                                      <table class="booking-table-right" id="nanometricsH120s-table-right"></table>
+                                    </div>
+                                  </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Nanometrics Trillium Compact Posthole 120s -->
+                    <div class="accordion-item">
+                        <div class="accordion-header" onclick="toggleAccordion(this)">
+                            <div>
+                                <div class="accordion-title">Nanometrics Trillium Compact Posthole 120s</div>
+                                <div class="accordion-subtitle">35 instruments (0 under maintenance)</div>
+                            </div>
+                            <div class="accordion-toggle">▼</div>
+                        </div>
+                        <div class="accordion-content">
+                            <div class="booking-calendar">
+                                <div class="calendar-flex-container">
+                                  <div class="calendar-left">
+                                    <table class="booking-table-left" id="nanometricsP120s-table-left"></table>
+                                  </div>
+                                  <div class="calendar-right">
+                                    <div class="calendar-right-scroll">
+                                      <table class="booking-table-right" id="nanometricsP120s-table-right"></table>
+                                    </div>
+                                  </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Nanometrics Trillium Compact 20s -->
+                    <div class="accordion-item">
+                        <div class="accordion-header" onclick="toggleAccordion(this)">
+                            <div>
+                                <div class="accordion-title">Nanometrics Trillium Compact 20s</div>
+                                <div class="accordion-subtitle">30 instruments (0 under maintenance)</div>
+                            </div>
+                            <div class="accordion-toggle">▼</div>
+                        </div>
+                        <div class="accordion-content">
+                            <div class="booking-calendar">
+                                <div class="calendar-flex-container">
+                                  <div class="calendar-left">
+                                    <table class="booking-table-left" id="nanometrics20s-table-left"></table>
+                                  </div>
+                                  <div class="calendar-right">
+                                    <div class="calendar-right-scroll">
+                                      <table class="booking-table-right" id="nanometrics20s-table-right"></table>
+                                    </div>
+                                  </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- SHORT-PERIOD SEISMOMETERS Category -->
+        <div class="category-accordion">
+            <div class="category-header" onclick="toggleCategory(this)">
+                <div class="category-info">
+                    <div class="category-title">Short-Period Seismometers</div>
+                    <div class="category-subtitle">3 instrument types</div>
+                </div>
+                <div class="category-toggle">▼</div>
+            </div>
+            <div class="category-content">
+                <div class="accordion-container">
+                    <!-- LE-3D Lite (AUS) -->
+                    <div class="accordion-item">
+                        <div class="accordion-header" onclick="toggleAccordion(this)">
+                            <div>
+                                <div class="accordion-title">LE-3D Lite (AUS)</div>
+                                <div class="accordion-subtitle">90 instruments (0 under maintenance)</div>
+                            </div>
+                            <div class="accordion-toggle">▼</div>
+                        </div>
+                        <div class="accordion-content">
+                            <div class="booking-calendar">
+                                <div class="calendar-flex-container">
+                                  <div class="calendar-left">
+                                    <table class="booking-table-left" id="le3DliteAUS-table-left"></table>
+                                  </div>
+                                  <div class="calendar-right">
+                                    <div class="calendar-right-scroll">
+                                      <table class="booking-table-right" id="le3DliteAUS-table-right"></table>
+                                    </div>
+                                  </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- LE-3D Lite (NZ) -->
+                    <div class="accordion-item">
+                        <div class="accordion-header" onclick="toggleAccordion(this)">
+                            <div>
+                                <div class="accordion-title">LE-3D Lite (NZ)</div>
+                                <div class="accordion-subtitle">25 instruments (0 under maintenance)</div>
+                            </div>
+                            <div class="accordion-toggle">▼</div>
+                        </div>
+                        <div class="accordion-content">
+                            <div class="booking-calendar">
+                                <div class="calendar-flex-container">
+                                  <div class="calendar-left">
+                                    <table class="booking-table-left" id="le3DliteNZ-table-left"></table>
+                                  </div>
+                                  <div class="calendar-right">
+                                    <div class="calendar-right-scroll">
+                                      <table class="booking-table-right" id="le3DliteNZ-table-right"></table>
+                                    </div>
+                                  </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Sercel L28-3D -->
+                    <div class="accordion-item">
+                        <div class="accordion-header" onclick="toggleAccordion(this)">
+                            <div>
+                                <div class="accordion-title">Sercel L28-3D</div>
+                                <div class="accordion-subtitle">18 instruments (0 under maintenance)</div>
+                            </div>
+                            <div class="accordion-toggle">▼</div>
+                        </div>
+                        <div class="accordion-content">
+                            <div class="booking-calendar">
+                                <div class="calendar-flex-container">
+                                  <div class="calendar-left">
+                                    <table class="booking-table-left" id="sercelL283D-table-left"></table>
+                                  </div>
+                                  <div class="calendar-right">
+                                    <div class="calendar-right-scroll">
+                                      <table class="booking-table-right" id="sercelL283D-table-right"></table>
+                                    </div>
+                                  </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- NODAL SEISMOMETERS Category -->
+        <div class="category-accordion">
+            <div class="category-header" onclick="toggleCategory(this)">
+                <div class="category-info">
+                    <div class="category-title">Nodal Seismometers</div>
+                    <div class="category-subtitle">3 instrument types</div>
+                </div>
+                <div class="category-toggle">▼</div>
+            </div>
+            <div class="category-content">
+                <div class="accordion-container">
+                    <!-- IGU-16HR 3C 5Hz (AUS) -->
+                    <div class="accordion-item">
+                        <div class="accordion-header" onclick="toggleAccordion(this)">
+                            <div>
+                                <div class="accordion-title">IGU-16HR 3C 5Hz (AUS)</div>
+                                <div class="accordion-subtitle">215 instruments (0 under maintenance)</div>
+                            </div>
+                            <div class="accordion-toggle">▼</div>
+                        </div>
+                        <div class="accordion-content">
+                            <div class="booking-calendar">
+                                <div class="calendar-flex-container">
+                                  <div class="calendar-left">
+                                    <table class="booking-table-left" id="IGU16HR3C5HzAU-table-left"></table>
+                                  </div>
+                                  <div class="calendar-right">
+                                    <div class="calendar-right-scroll">
+                                      <table class="booking-table-right" id="IGU16HR3C5HzAU-table-right"></table>
+                                    </div>
+                                  </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- IGU-16HR 3C 5Hz (NZ) -->
+                    <div class="accordion-item">
+                        <div class="accordion-header" onclick="toggleAccordion(this)">
+                            <div>
+                                <div class="accordion-title">IGU-16HR 3C 5Hz (NZ)</div>
+                                <div class="accordion-subtitle">111 instruments (0 under maintenance)</div>
+                            </div>
+                            <div class="accordion-toggle">▼</div>
+                        </div>
+                        <div class="accordion-content">
+                            <div class="booking-calendar">
+                                <div class="calendar-flex-container">
+                                  <div class="calendar-left">
+                                    <table class="booking-table-left" id="IGU16HR3C5HzNZ-table-left"></table>
+                                  </div>
+                                  <div class="calendar-right">
+                                    <div class="calendar-right-scroll">
+                                      <table class="booking-table-right" id="IGU16HR3C5HzNZ-table-right"></table>
+                                    </div>
+                                  </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- IGU-BD 3C 5s -->
+                    <div class="accordion-item">
+                        <div class="accordion-header" onclick="toggleAccordion(this)">
+                            <div>
+                                <div class="accordion-title">IGU-BD 3C 5s</div>
+                                <div class="accordion-subtitle">99 instruments (0 under maintenance)</div>
+                            </div>
+                            <div class="accordion-toggle">▼</div>
+                        </div>
+                        <div class="accordion-content">
+                            <div class="booking-calendar">
+                                <div class="calendar-flex-container">
+                                  <div class="calendar-left">
+                                    <table class="booking-table-left" id="IGUBD3C5s-table-left"></table>
+                                  </div>
+                                  <div class="calendar-right">
+                                    <div class="calendar-right-scroll">
+                                      <table class="booking-table-right" id="IGUBD3C5s-table-right"></table>
+                                    </div>
+                                  </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- FIBRE OPTIC DAS Category -->
+        <div class="category-accordion">
+            <div class="category-header" onclick="toggleCategory(this)">
+                <div class="category-info">
+                    <div class="category-title">Fibre Optic DAS</div>
+                    <div class="category-subtitle">3 instrument types</div>
+                </div>
+                <div class="category-toggle">▼</div>
+            </div>
+            <div class="category-content">
+                <div class="accordion-container">
+                    <!-- Silixa iDAS 24 -->
+                    <div class="accordion-item">
+                        <div class="accordion-header" onclick="toggleAccordion(this)">
+                            <div>
+                                <div class="accordion-title">Silixa iDAS 24</div>
+                                <div class="accordion-subtitle">1 instrument (0 under maintenance)</div>
+                            </div>
+                            <div class="accordion-toggle">▼</div>
+                        </div>
+                        <div class="accordion-content">
+                            <div class="booking-calendar">
+                                <div class="calendar-flex-container">
+                                  <div class="calendar-left">
+                                    <table class="booking-table-left" id="SilixaIDAS24-table-left"></table>
+                                  </div>
+                                  <div class="calendar-right">
+                                    <div class="calendar-right-scroll">
+                                      <table class="booking-table-right" id="SilixaIDAS24-table-right"></table>
+                                    </div>
+                                  </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Silixa iDAS 25 -->
+                    <div class="accordion-item">
+                        <div class="accordion-header" onclick="toggleAccordion(this)">
+                            <div>
+                                <div class="accordion-title">Silixa iDAS 25</div>
+                                <div class="accordion-subtitle">1 instrument (0 under maintenance)</div>
+                            </div>
+                            <div class="accordion-toggle">▼</div>
+                        </div>
+                        <div class="accordion-content">
+                            <div class="booking-calendar">
+                                <div class="calendar-flex-container">
+                                  <div class="calendar-left">
+                                    <table class="booking-table-left" id="SilixaIDAS25-table-left"></table>
+                                  </div>
+                                  <div class="calendar-right">
+                                    <div class="calendar-right-scroll">
+                                      <table class="booking-table-right" id="SilixaIDAS25-table-right"></table>
+                                    </div>
+                                  </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Silixa iDAS 25 (NZ) -->
+                    <div class="accordion-item">
+                        <div class="accordion-header" onclick="toggleAccordion(this)">
+                            <div>
+                                <div class="accordion-title">Silixa iDAS 25 (NZ)</div>
+                                <div class="accordion-subtitle">1 instrument (0 under maintenance)</div>
+                            </div>
+                            <div class="accordion-toggle">▼</div>
+                        </div>
+                        <div class="accordion-content">
+                            <div class="booking-calendar">
+                                <div class="calendar-flex-container">
+                                  <div class="calendar-left">
+                                    <table class="booking-table-left" id="SilixaIDAS25NZ-table-left"></table>
+                                  </div>
+                                  <div class="calendar-right">
+                                    <div class="calendar-right-scroll">
+                                      <table class="booking-table-right" id="SilixaIDAS25NZ-table-right"></table>
+                                    </div>
+                                  </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- MAGNETOTELLURICS Category -->
+        <div class="category-accordion">
+            <div class="category-header" onclick="toggleCategory(this)">
+                <div class="category-info">
+                    <div class="category-title">Magnetotellurics</div>
+                    <div class="category-subtitle">4 instrument types</div>
+                </div>
+                <div class="category-toggle">▼</div>
+            </div>
+            <div class="category-content">
+                <div class="accordion-container">
+                    <!-- MTU-5C -->
+                    <div class="accordion-item">
+                        <div class="accordion-header" onclick="toggleAccordion(this)">
+                            <div>
+                                <div class="accordion-title">MTU-5C</div>
+                                <div class="accordion-subtitle">9 instruments (0 under maintenance)</div>
+                            </div>
+                            <div class="accordion-toggle">▼</div>
+                        </div>
+                        <div class="accordion-content">
+                            <div class="booking-calendar">
+                                <div class="calendar-flex-container">
+                                  <div class="calendar-left">
+                                    <table class="booking-table-left" id="MTU5C-table-left"></table>
+                                  </div>
+                                  <div class="calendar-right">
+                                    <div class="calendar-right-scroll">
+                                      <table class="booking-table-right" id="MTU5C-table-right"></table>
+                                    </div>
+                                  </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- EDL -->
+                    <div class="accordion-item">
+                        <div class="accordion-header" onclick="toggleAccordion(this)">
+                            <div>
+                                <div class="accordion-title">EDL</div>
+                                <div class="accordion-subtitle">24 instruments (0 under maintenance)</div>
+                            </div>
+                            <div class="accordion-toggle">▼</div>
+                        </div>
+                        <div class="accordion-content">
+                            <div class="booking-calendar">
+                                <div class="calendar-flex-container">
+                                  <div class="calendar-left">
+                                    <table class="booking-table-left" id="EDL-table-left"></table>
+                                  </div>
+                                  <div class="calendar-right">
+                                    <div class="calendar-right-scroll">
+                                      <table class="booking-table-right" id="EDL-table-right"></table>
+                                    </div>
+                                  </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- LEMI-424 -->
+                    <div class="accordion-item">
+                        <div class="accordion-header" onclick="toggleAccordion(this)">
+                            <div>
+                                <div class="accordion-title">LEMI-424</div>
+                                <div class="accordion-subtitle">20 instruments (0 under maintenance)</div>
+                            </div>
+                            <div class="accordion-toggle">▼</div>
+                        </div>
+                        <div class="accordion-content">
+                            <div class="booking-calendar">
+                                <div class="calendar-flex-container">
+                                  <div class="calendar-left">
+                                    <table class="booking-table-left" id="LEMI424-table-left"></table>
+                                  </div>
+                                  <div class="calendar-right">
+                                    <div class="calendar-right-scroll">
+                                      <table class="booking-table-right" id="LEMI424-table-right"></table>
+                                    </div>
+                                  </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- LEMI-423 -->
+                    <div class="accordion-item">
+                        <div class="accordion-header" onclick="toggleAccordion(this)">
+                            <div>
+                                <div class="accordion-title">LEMI-423</div>
+                                <div class="accordion-subtitle">23 instruments (0 under maintenance)</div>
+                            </div>
+                            <div class="accordion-toggle">▼</div>
+                        </div>
+                        <div class="accordion-content">
+                            <div class="booking-calendar">
+                                <div class="calendar-flex-container">
+                                  <div class="calendar-left">
+                                    <table class="booking-table-left" id="LEMI423-table-left"></table>
+                                  </div>
+                                  <div class="calendar-right">
+                                    <div class="calendar-right-scroll">
+                                      <table class="booking-table-right" id="LEMI423-table-right"></table>
+                                    </div>
+                                  </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="booking-tooltip" id="tooltip"></div>
+
+    <script>
+        // Instrument configurations
+        const instrumentPools = {
+            //   SEISMIC RECORDERS    
+            terraSAWR: {
+                total: 65,
+                maintenance: 26,
+                experiments: [
+                    {
+                        name: "Available Instruments",
+                        isAvailability: true,
+                        deployments: [] // Will be calculated
+                    },
+                    {
+                        name: "AHNA Auckland",
+                        deployments: [
+                            { start: "2025-01", end: "2025-09", count: 4 , description: "Short term (30 day) node array targeting the greater Auckland Volcanic Field and the Hauraki Rift to the east. 52 SmartSolo BD3C 5s nodes were deployed May-June 2023 which were supplemented by five additional Trillium Compact 120s stations (AKB*) which will remain installed for an extended period. All data recorded at 250 Hz."}
+                        ]
+                    },
+                    {
+                        name: "SPIRaL NT",
+                        deployments: [
+                            { start: "2025-01", end: "2025-09", count: 11 , description: "This experiment tests the feasibility of using short-aperture spiral-arm arrays for earthquake and man-made explosion monitoring and subsequent applications in studies of the deep Earth’s interior. 16 broadband sensors were deployed at Warramunga Research Station each recording at 100 Hz."}
+                        ]
+                    },
+                    {
+                        name: "SNAKEY SA",
+                        deployments: [
+                            { start: "2025-01", end: "2026-05", count: 12, description: "This deployment of 20 broadband seismometers is intended to fill a gap in seismic coverage in South Australia, along the south-eastern margin of the Galwer Craton. The aim is to better characterise the local seismicity, and to improve seismic imaging of the crust and upper mantle structure beneath this region. Seismometers are located throughout the eastern Eyre Peninsula, Yorke Peninsula, Fleurieu Peninsula, and Kangaroo Island. Sensors used during this project include twelve Trillium Compact 120s and eight Trillium Compact Postholes 120s. For digitizers, the TerraSAWR and LPR-200 ANU seismic recorders were deployed. Data was sampled at 100Hz."}
+                        ]
+                    },
+                    {
+                        name: "GSWA WA-Array Phase 2",
+                        deployments: [
+                            { start: "2025-01", end: "2026-05", count: 1 , description: "The Geological Survey of Western Australia WA Array Phase 2 is the next stage of a seismic imaging project deploying a large network of high-resolution (40 km site spacing) seismometers across Western Australia, covering a region stretching from Geraldton in the northwest to Leonora and Laverton, and south through the Goldfields to Esperance. Starting in early 2024 and continuing until March 2025, these instruments will measure subtle vibrations from earthquakes, industrial activities, and even ocean waves to reveal the deep geological structure and composition of the Earth beneath WA. The insights gained will support mineral and energy exploration, improve earthquake hazard assessments, inform sustainable land-use planning, and help guide the state’s transition towards net-zero emissions."}
+                        ]
+                    },
+                    {
+                        name: "GSWA WA-Array Phase 3",
+                        deployments: [
+                            { start: "2025-05", end: "2026-05", count: 4 , description: "The Geological Survey of Western Australia WA Array Phase 3 is the next stage of a seismic imaging project deploying a network of high-resolution (40 km site spacing) seismometers across Western Australia. This will be split between the Warburton area of the central east of WA and the Mid-West. Planned for deployment in May 2025 and expected to continue recording for a year, these instruments will measure subtle vibrations from earthquakes, industrial activities, and even ocean waves to reveal the deep geological structure and composition of the Earth beneath WA. The insights gained will support mineral and energy exploration, improve earthquake hazard assessments, inform sustainable land-use planning, and help guide the state’s transition towards net-zero emissions."}
+                        ]
+                    }
+                ]
+            },
+            lpr200AUS: {
+                total: 167,
+                maintenance: 24,
+                experiments: [
+                    {
+                        name: "Available Instruments",
+                        isAvailability: true,
+                        deployments: [] // Will be calculated
+                    },
+                    {
+                        name: "GA AusArray VIC",
+                        deployments: [
+                            { start: "2025-01", end: "2025-07", count: 58 , description: "The Geoscience Australia AusArray Victoria project aims to enhance our understanding of Victoria’s geological structures by deploying a dense network of passive seismic stations spaced approximately 50 kilometres apart over one year. Through advanced seismic imaging methods, including ambient noise tomography, body-wave tomography, and receiver functions, researchers will image the deep lithospheric structures beneath the region. The outcomes will clarify the mechanisms driving thermal activity in Victoria and provide insights into the relationship between the region’s geological features and its mineral resource potential."}
+                        ]
+                    },
+                    {
+                        name: "SPIRaL NT",
+                        deployments: [
+                            { start: "2025-01", end: "2025-09", count: 18 , description: "This experiment tests the feasibility of using short-aperture spiral-arm arrays for earthquake and man-made explosion monitoring and subsequent applications in studies of the deep Earth’s interior. 16 broadband sensors were deployed at Warramunga Research Station each recording at 100 Hz."}
+                        ]
+                    },
+                    {
+                        name: "SNAKEY SA",
+                        deployments: [
+                            { start: "2025-01", end: "2026-05", count: 4 , description: "This deployment of 20 broadband seismometers is intended to fill a gap in seismic coverage in South Australia, along the south-eastern margin of the Galwer Craton. The aim is to better characterise the local seismicity, and to improve seismic imaging of the crust and upper mantle structure beneath this region. Seismometers are located throughout the eastern Eyre Peninsula, Yorke Peninsula, Fleurieu Peninsula, and Kangaroo Island. Sensors used during this project include twelve Trillium Compact 120s and eight Trillium Compact Postholes 120s. For digitizers, the TerraSAWR and LPR-200 ANU seismic recorders were deployed. Data was sampled at 100Hz."}
+                        ]
+                    },
+                    {
+                        name: "GSWA WA-Array Phase 2",
+                        deployments: [
+                            { start: "2025-01", end: "2026-05", count: 14 , description: "The Geological Survey of Western Australia WA Array Phase 2 is the next stage of a seismic imaging project deploying a large network of high-resolution (40 km site spacing) seismometers across Western Australia, covering a region stretching from Geraldton in the northwest to Leonora and Laverton, and south through the Goldfields to Esperance. Starting in early 2024 and continuing until March 2025, these instruments will measure subtle vibrations from earthquakes, industrial activities, and even ocean waves to reveal the deep geological structure and composition of the Earth beneath WA. The insights gained will support mineral and energy exploration, improve earthquake hazard assessments, inform sustainable land-use planning, and help guide the state’s transition towards net-zero emissions."}
+                        ]
+                    },
+                    {
+                        name: "GSWA WA-Array Phase 3",
+                        deployments: [
+                            { start: "2025-05", end: "2026-05", count: 6 , description: "The Geological Survey of Western Australia WA Array Phase 3 is the next stage of a seismic imaging project deploying a network of high-resolution (40 km site spacing) seismometers across Western Australia. This will be split between the Warburton area of the central east of WA and the Mid-West. Planned for deployment in May 2025 and expected to continue recording for a year, these instruments will measure subtle vibrations from earthquakes, industrial activities, and even ocean waves to reveal the deep geological structure and composition of the Earth beneath WA. The insights gained will support mineral and energy exploration, improve earthquake hazard assessments, inform sustainable land-use planning, and help guide the state’s transition towards net-zero emissions."}
+                        ]
+                    }
+                ]
+            },
+            lpr200NZ: {
+                total: 26,
+                maintenance: 16,
+                experiments: [
+                    {
+                        name: "Available Instruments",
+                        isAvailability: true,
+                        deployments: [] // Will be calculated
+                    },
+                    {
+                        name: "SAMWISE Southern Alps",
+                        deployments: [
+                            { start: "2025-10", end: "2027-10", count: 10 , description: "Southern Alps Monitoring of Weather-Influenced Seismicity and Erosion (SAMWISE) is a project that focuses on studying seismic activity in New Zealands Southern Alps by collecting and analysing new seismic data."}
+                        ]
+                    }
+                ]
+            },
+            nanometricsCentaur: {
+                total: 3,
+                maintenance: 0,
+                experiments: [
+                    {
+                        name: "Available Instruments",
+                        isAvailability: true,
+                        deployments: [] // Will be calculated
+                    },
+                    {
+                        name: "Maunakea and Kilauea volcanoes",
+                        deployments: [
+                            { start: "2025-09", end: "2026-08", count: 2 , description: "ARC Centre of Excellence COMBS joint investigation led by the Australian National University with the W.M. Keck Observatory, University of Hawai'i and Caltech to run a distributed acoustic sensing (DAS) experiment on Maunakea on the Big Island of Hawai’i. We aim to record small, previously undetected earthquakes on the dormant volcano and use these and ambient noise signals to image the volcano structure."}
+                        ]
+                    }
+                ]
+            },
+            //    SEISMOMETERS
+            nanometrics120sAUS: {
+                total: 121,
+                maintenance: 7,
+                experiments: [
+                    {
+                        name: "Available Instruments",
+                        isAvailability: true,
+                        deployments: [] // Will be calculated
+                    },
+                    {
+                        name: "UTas Antartica",
+                        deployments: [
+                            { start: "2025-01", end: "2027-12", count: 6 }
+                        ]
+                    },
+                    {
+                        name: "GA AusArray VIC",
+                        deployments: [
+                            { start: "2025-01", end: "2025-07", count: 43 , description: "The Geoscience Australia AusArray Victoria project aims to enhance our understanding of Victoria’s geological structures by deploying a dense network of passive seismic stations spaced approximately 50 kilometres apart over one year. Through advanced seismic imaging methods, including ambient noise tomography, body-wave tomography, and receiver functions, researchers will image the deep lithospheric structures beneath the region. The outcomes will clarify the mechanisms driving thermal activity in Victoria and provide insights into the relationship between the region’s geological features and its mineral resource potential."}
+                        ]
+                    },
+                    {
+                        name: "SPIRaL NT",
+                        deployments: [
+                            { start: "2025-01", end: "2025-09", count: 2, description: "This experiment tests the feasibility of using short-aperture spiral-arm arrays for earthquake and man-made explosion monitoring and subsequent applications in studies of the deep Earth’s interior. 16 broadband sensors were deployed at Warramunga Research Station each recording at 100 Hz."}
+                        ]
+                    },
+                    {
+                        name: "SNAKEY SA",
+                        deployments: [
+                            { start: "2025-01", end: "2026-05", count: 9 , description: "This deployment of 20 broadband seismometers is intended to fill a gap in seismic coverage in South Australia, along the south-eastern margin of the Galwer Craton. The aim is to better characterise the local seismicity, and to improve seismic imaging of the crust and upper mantle structure beneath this region. Seismometers are located throughout the eastern Eyre Peninsula, Yorke Peninsula, Fleurieu Peninsula, and Kangaroo Island. Sensors used during this project include twelve Trillium Compact 120s and eight Trillium Compact Postholes 120s. For digitizers, the TerraSAWR and LPR-200 ANU seismic recorders were deployed. Data was sampled at 100Hz."}
+                        ]
+                    },
+                    {
+                        name: "GSWA WA-Array Phase 2",
+                        deployments: [
+                            { start: "2025-01", end: "2026-05", count: 18 , description: "The Geological Survey of Western Australia WA Array Phase 2 is the next stage of a seismic imaging project deploying a large network of high-resolution (40 km site spacing) seismometers across Western Australia, covering a region stretching from Geraldton in the northwest to Leonora and Laverton, and south through the Goldfields to Esperance. Starting in early 2024 and continuing until March 2025, these instruments will measure subtle vibrations from earthquakes, industrial activities, and even ocean waves to reveal the deep geological structure and composition of the Earth beneath WA. The insights gained will support mineral and energy exploration, improve earthquake hazard assessments, inform sustainable land-use planning, and help guide the state’s transition towards net-zero emissions."}
+                        ]
+                    },
+                    {
+                        name: "Maunakea and Kilauea volcanoes",
+                        deployments: [
+                            { start: "2025-09", end: "2026-08", count: 2 , description: "ARC Centre of Excellence COMBS joint investigation led by the Australian National University with the W.M. Keck Observatory, University of Hawai'i and Caltech to run a distributed acoustic sensing (DAS) experiment on Maunakea on the Big Island of Hawai’i. We aim to record small, previously undetected earthquakes on the dormant volcano and use these and ambient noise signals to image the volcano structure."}
+                        ]
+                    }
+                ]
+            },
+            nanometrics120sNZ: {
+                total: 5,
+                maintenance: 0,
+                experiments: [
+                    {
+                        name: "Available Instruments",
+                        isAvailability: true,
+                        deployments: [] // Will be calculated
+                    },
+                    {
+                        name: "AHNA Auckland",
+                        deployments: [
+                            { start: "2025-01", end: "2025-09", count: 5 , description: "Short term (30 day) node array targeting the greater Auckland Volcanic Field and the Hauraki Rift to the east. 52 SmartSolo BD3C 5s nodes were deployed May-June 2023 which were supplemented by five additional Trillium Compact 120s stations (AKB*) which will remain installed for an extended period. All data recorded at 250 Hz."}
+                        ]
+                    }
+                ]
+            },
+            nanometricsH120s: {
+                total: 12,
+                maintenance: 0,
+                experiments: [
+                    {
+                        name: "Available Instruments",
+                        isAvailability: true,
+                        deployments: [] // Will be calculated
+                    },
+                    {
+                        name: "AHNA Auckland",
+                        deployments: [
+                            { start: "2025-01", end: "2025-09", count: 5 , description: "Short term (30 day) node array targeting the greater Auckland Volcanic Field and the Hauraki Rift to the east. 52 SmartSolo BD3C 5s nodes were deployed May-June 2023 which were supplemented by five additional Trillium Compact 120s stations (AKB*) which will remain installed for an extended period. All data recorded at 250 Hz."}
+                        ]
+                    }
+                ]
+            },
+            nanometricsP120s: {
+                total: 35,
+                maintenance: 2,
+                experiments: [
+                    {
+                        name: "Available Instruments",
+                        isAvailability: true,
+                        deployments: [] // Will be calculated
+                    },
+                    {
+                        name: "SPIRaL NT",
+                        deployments: [
+                            { start: "2025-01", end: "2025-09", count: 16 }
+                        ]
+                    },
+                    {
+                        name: "SNAKEY SA",
+                        deployments: [
+                            { start: "2025-01", end: "2026-05", count: 10 , description: "This deployment of 20 broadband seismometers is intended to fill a gap in seismic coverage in South Australia, along the south-eastern margin of the Galwer Craton. The aim is to better characterise the local seismicity, and to improve seismic imaging of the crust and upper mantle structure beneath this region. Seismometers are located throughout the eastern Eyre Peninsula, Yorke Peninsula, Fleurieu Peninsula, and Kangaroo Island. Sensors used during this project include twelve Trillium Compact 120s and eight Trillium Compact Postholes 120s. For digitizers, the TerraSAWR and LPR-200 ANU seismic recorders were deployed. Data was sampled at 100Hz."}
+                        ]
+                    }
+                ]
+            },
+            nanometrics20s: {
+                total: 30,
+                maintenance: 0,
+                experiments: [
+                    {
+                        name: "Available Instruments",
+                        isAvailability: true,
+                        deployments: [] // Will be calculated
+                    },
+                    {
+                        name: "GA AusArray VIC",
+                        deployments: [
+                            { start: "2025-01", end: "2025-07", count: 1 , description: "The Geoscience Australia AusArray Victoria project aims to enhance our understanding of Victoria’s geological structures by deploying a dense network of passive seismic stations spaced approximately 50 kilometres apart over one year. Through advanced seismic imaging methods, including ambient noise tomography, body-wave tomography, and receiver functions, researchers will image the deep lithospheric structures beneath the region. The outcomes will clarify the mechanisms driving thermal activity in Victoria and provide insights into the relationship between the region’s geological features and its mineral resource potential."}
+                        ]
+                    },
+                    {
+                        name: "GSWA WA-Array Phase 2",
+                        deployments: [
+                            { start: "2025-01", end: "2026-05", count: 1 , description: "The Geological Survey of Western Australia WA Array Phase 2 is the next stage of a seismic imaging project deploying a large network of high-resolution (40 km site spacing) seismometers across Western Australia, covering a region stretching from Geraldton in the northwest to Leonora and Laverton, and south through the Goldfields to Esperance. Starting in early 2024 and continuing until March 2025, these instruments will measure subtle vibrations from earthquakes, industrial activities, and even ocean waves to reveal the deep geological structure and composition of the Earth beneath WA. The insights gained will support mineral and energy exploration, improve earthquake hazard assessments, inform sustainable land-use planning, and help guide the state’s transition towards net-zero emissions."}
+                        ]
+                    }
+                ]
+            },
+            //    SHORT-PERIOD SEISMOMETERS
+            le3DliteAUS: {
+                total: 90,
+                maintenance: 0,
+                experiments: [
+                    {
+                        name: "Available Instruments",
+                        isAvailability: true,
+                        deployments: [] // Will be calculated
+                    }
+                ]
+            },
+            le3DliteNZ: {
+                total: 25,
+                maintenance: 0,
+                experiments: [
+                    {
+                        name: "Available Instruments",
+                        isAvailability: true,
+                        deployments: [] // Will be calculated
+                    },
+                    {
+                        name: "SAMWISE Southern Alps",
+                        deployments: [
+                            { start: "2025-10", end: "2027-10", count: 10 , description: "Southern Alps Monitoring of Weather-Influenced Seismicity and Erosion (SAMWISE) is a project that focuses on studying seismic activity in New Zealands Southern Alps by collecting and analysing new seismic data."}
+                        ]
+                    }
+                ]
+            },
+            sercelL283D: {
+                total: 18,
+                maintenance: 0,
+                experiments: [
+                    {
+                        name: "Available Instruments",
+                        isAvailability: true,
+                        deployments: [] // Will be calculated
+                    }
+                ]
+            },
+            //    NODAL SEISMOMETERS
+            IGU16HR3C5HzAU: {
+                total: 215,
+                maintenance: 0,
+                experiments: [
+                    {
+                        name: "Available Instruments",
+                        isAvailability: true,
+                        deployments: [] // Will be calculated
+                    }
+                ]
+            },
+            IGU16HR3C5HzNZ: {
+                total: 111,
+                maintenance: 0,
+                experiments: [
+                    {
+                        name: "Available Instruments",
+                        isAvailability: true,
+                        deployments: [] // Will be calculated
+                    },
+                    {
+                        name: "Ōkataina Caldera",
+                        deployments: [
+                            { start: "2025-10", end: "2026-04", count: 84 , description: "A temporary network of seismic nodes focussed on Ōkataina caldera volcano in the North Island of Aotearoa New Zealand. We seek to image the volcano in detail and detect local earthquakes to improve our knowledge of the volcano’s structure and processes and the hazard that it poses."}
+                        ]
+                    }
+                ]
+            },
+            IGUBD3C5s: {
+                total: 99,
+                maintenance: 0,
+                experiments: [
+                    {
+                        name: "Available Instruments",
+                        isAvailability: true,
+                        deployments: [] // Will be calculated
+                    }
+                ]
+            },
+            //    FIBRE OPTIC DAS
+            SilixaIDAS24: {
+                total: 1,
+                maintenance: 0,
+                experiments: [
+                    {
+                        name: "Available Instruments",
+                        isAvailability: true,
+                        deployments: [] // Will be calculated
+                    }
+                ]
+            },
+            SilixaIDAS25: {
+                total: 1,
+                maintenance: 0,
+                experiments: [
+                    {
+                        name: "Available Instruments",
+                        isAvailability: true,
+                        deployments: [] // Will be calculated
+                    },
+                    {
+                        name: "Maunakea and Kilauea volcanoes",
+                        deployments: [
+                            { start: "2025-09", end: "2026-08", count: 1 , description: "ARC Centre of Excellence COMBS joint investigation led by the Australian National University with the W.M. Keck Observatory, University of Hawai'i and Caltech to run a distributed acoustic sensing (DAS) experiment on Maunakea on the Big Island of Hawai’i. We aim to record small, previously undetected earthquakes on the dormant volcano and use these and ambient noise signals to image the volcano structure."}
+                        ]
+                    }
+                ]
+            },
+            SilixaIDAS25NZ: {
+                total: 1,
+                maintenance: 0,
+                experiments: [
+                    {
+                        name: "Available Instruments",
+                        isAvailability: true,
+                        deployments: [] // Will be calculated
+                    }
+                ]
+            },
+            //    MAGNETOTELLURICS
+            MTU5C: {
+                total: 9,
+                maintenance: 0,
+                experiments: [
+                    {
+                        name: "Available Instruments",
+                        isAvailability: true,
+                        deployments: [] // Will be calculated
+                    }
+                ]
+            },
+            EDL: {
+                total: 24,
+                maintenance: 0,
+                experiments: [
+                    {
+                        name: "Available Instruments",
+                        isAvailability: true,
+                        deployments: [] // Will be calculated
+                    },
+                    {
+                        name: "UoA AusLAMP",
+                        deployments: [
+                            { start: "2025-01", end: "2026-10", count: 24 , description: "This program builds on a national survey called the Australian Lithospheric Architecture Magnetotelluric Project (AusLAMP), which collects MT data across Australia. Currently there are large gaps in AusLAMP in NT and Qld, with this University of Adelaide project designed to help fill the gap and complete the AusLAMP program."}
+                        ]
+                    }
+                ]
+            },
+            LEMI424: {
+                total: 20,
+                maintenance: 0,
+                experiments: [
+                    {
+                        name: "Available Instruments",
+                        isAvailability: true,
+                        deployments: [] // Will be calculated
+                    },
+                    {
+                        name: "M-Geo WA-MT",
+                        deployments: [
+                            { start: "2025-01", end: "2026-10", count: 10 , description: "The Geological Survey of Western Australia WA-MT program will map the conductivity of Western Australia. This program builds on a national survey called the Australian Lithospheric Architecture Magnetotelluric Project (AusLAMP), which collects MT data across Australia. WA MT will use special long-period MT equipment set up across on a 40 km by 40 km grid, to match the WA Array passive seismic survey sites."}
+                        ]
+                    },
+                    {
+                        name: "GSWA WA-MT",
+                        deployments: [
+                            { start: "2025-01", end: "2026-10", count: 10 , description: "The Geological Survey of Western Australia WA-MT program will map the conductivity of Western Australia. This program builds on a national survey called the Australian Lithospheric Architecture Magnetotelluric Project (AusLAMP), which collects MT data across Australia. WA MT will use special long-period MT equipment set up across on a 40 km by 40 km grid, to match the WA Array passive seismic survey sites."}
+                        ]
+                    }
+                ]
+            },
+            LEMI423: {
+                total: 24,
+                maintenance: 0,
+                experiments: [
+                    {
+                        name: "Available Instruments",
+                        isAvailability: true,
+                        deployments: [] // Will be calculated
+                    },
+                    {
+                        name: "Atlas MT Morocco",
+                        deployments: [
+                            { start: "2025-01", end: "2025-07", count: 13 , description: "This ongoing joint project between ONHYM, the National Office of Hydrocarbons and Mines, Mohamed V University and the University of Adelaide is to map the geo-electrical structure of the High Atlas Mountains in Morocco."}
+                        ]
+                    }
+                ]
+            }
+        };
+
+        const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+        // Calculate available instruments
+        function calculateAvailableInstruments(pool) {
+            const totalAvailable = pool.total - pool.maintenance;
+            const monthlyDeployments = new Array(36).fill(0); // 36 months (2025-2027)
+            
+            // Calculate deployments per month
+            pool.experiments.forEach(exp => {
+                if (!exp.isAvailability) {
+                    exp.deployments.forEach(dep => {
+                        const startIdx = parseMonth(dep.start);
+                        const endIdx = parseMonth(dep.end);
+                        for (let i = startIdx; i <= endIdx && i < 36; i++) {
+                            monthlyDeployments[i] += dep.count;
+                        }
+                    });
+                }
+            });
+            
+            // Calculate available instruments per period
+            const availablePeriods = [];
+            let i = 0;
+            while (i < 36) {
+                const available = totalAvailable - monthlyDeployments[i];
+                let j = i;
+                while (j < 36 && (totalAvailable - monthlyDeployments[j]) === available) {
+                    j++;
+                }
+                
+                const startYear = 2025 + Math.floor(i / 12);
+                const startMonth = (i % 12) + 1;
+                const endYear = 2025 + Math.floor((j - 1) / 12);
+                const endMonth = ((j - 1) % 12) + 1;
+                
+                availablePeriods.push({
+                    start: `${startYear}-${String(startMonth).padStart(2, '0')}`,
+                    end: `${endYear}-${String(endMonth).padStart(2, '0')}`,
+                    count: available
+                });
+                
+                i = j;
+            }
+            
+            return availablePeriods;
+        }
+
+        // Calculate availability for all pools
+        Object.keys(instrumentPools).forEach(poolKey => {
+            const pool = instrumentPools[poolKey];
+            pool.experiments[0].deployments = calculateAvailableInstruments(pool);
+        });
+        
+        // Parse month string to absolute month index
+        function parseMonth(monthStr) {
+            const [year, month] = monthStr.split('-').map(Number);
+            return (year - 2025) * 12 + (month - 1);
+        }
+
+        // Replace the old initializeTables and generateExperimentRows with the following:
+
+        function initializeSplitTables() {
+            Object.keys(instrumentPools).forEach(poolKey => {
+                // Get left and right table elements
+                const leftTable = document.getElementById(`${poolKey}-table-left`);
+                const rightTable = document.getElementById(`${poolKey}-table-right`);
+                if (leftTable && rightTable) {
+                    generateSplitTableHeaders(leftTable, rightTable);
+                    generateSplitExperimentRows(leftTable, rightTable, instrumentPools[poolKey].experiments);
+                }
+            });
+            syncSplitTableScroll();
+        }
+
+        function generateSplitTableHeaders(leftTable, rightTable) {
+            // Left table: two header rows
+            const leftThead = document.createElement('thead');
+            // First row: blank cell (aligns with year row)
+            const leftRow1 = document.createElement('tr');
+            const blankCell = document.createElement('th');
+            blankCell.className = 'experiment-col';
+            blankCell.textContent = '';
+            leftRow1.appendChild(blankCell);
+            leftThead.appendChild(leftRow1);
+            // Second row: 'Experiments' cell (aligns with month row)
+            const leftRow2 = document.createElement('tr');
+            const experimentHeader = document.createElement('th');
+            experimentHeader.className = 'experiment-col';
+            experimentHeader.textContent = 'Experiments';
+            leftRow2.appendChild(experimentHeader);
+            leftThead.appendChild(leftRow2);
+            leftTable.appendChild(leftThead);
+
+            // Right table: year and month headers (unchanged)
+            const rightThead = document.createElement('thead');
+            // Year row
+            const yearRow = document.createElement('tr');
+            for (let year = 2025; year <= 2027; year++) {
+                const yearTh = document.createElement('th');
+                yearTh.className = 'year-divider';
+                yearTh.colSpan = 12;
+                yearTh.textContent = year;
+                yearRow.appendChild(yearTh);
+            }
+            // Month row
+            const monthRow = document.createElement('tr');
+            for (let year = 2025; year <= 2027; year++) {
+                months.forEach(month => {
+                    const monthTh = document.createElement('th');
+                    monthTh.className = 'month-header';
+                    monthTh.textContent = month;
+                    monthRow.appendChild(monthTh);
+                });
+            }
+            rightThead.appendChild(yearRow);
+            rightThead.appendChild(monthRow);
+            rightTable.appendChild(rightThead);
+        }
+
+        function generateSplitExperimentRows(leftTable, rightTable, experiments) {
+            const leftTbody = document.createElement('tbody');
+            const rightTbody = document.createElement('tbody');
+            experiments.forEach((experiment, expIndex) => {
+                // Left table row (experiment name)
+                const leftRow = document.createElement('tr');
+                const nameCell = document.createElement('td');
+                nameCell.className = 'experiment-col';
+                nameCell.textContent = experiment.name;
+                leftRow.appendChild(nameCell);
+                leftTbody.appendChild(leftRow);
+
+                // Right table row (months/years)
+                const rightRow = document.createElement('tr');
+                // Build monthStatus array for this experiment
+                const monthStatus = new Array(36).fill('available');
+                experiment.deployments.forEach(deployment => {
+                    const startIdx = parseMonth(deployment.start);
+                    const endIdx = parseMonth(deployment.end);
+                    for (let i = startIdx; i <= endIdx && i < 36; i++) {
+                        monthStatus[i] = deployment;
+                    }
+                });
+                // Generate cells for right table
+                let i = 0;
+                while (i < 36) {
+                    if (monthStatus[i] === 'available') {
+                        // Merge consecutive available cells
+                        let j = i;
+                        while (j < 36 && monthStatus[j] === 'available') j++;
+                        const cell = document.createElement('td');
+                        cell.setAttribute('colspan', j - i);
+                        cell.className = 'available-merged';
+                        rightRow.appendChild(cell);
+                        i = j;
+                    } else {
+                        // Merge consecutive deployment cells
+                        const deployment = monthStatus[i];
+                        let j = i;
+                        while (j < 36 && monthStatus[j] === deployment) j++;
+                        const cell = document.createElement('td');
+                        cell.setAttribute('colspan', j - i);
+                        cell.className = experiment.isAvailability ?
+                            'booking-merged availability-merged' :
+                            'booking-merged deployed';
+                        const startMonthName = months[i % 12];
+                        const endMonthName = months[(j - 1) % 12];
+                        const startYear = 2025 + Math.floor(i / 12);
+                        const endYear = 2025 + Math.floor((j - 1) / 12);
+                        cell.innerHTML = `
+                            <span class="instrument-count">${deployment.count}</span>
+                            <span class="instrument-label">
+                                ${deployment.count === 1 ? 'Instrument' : experiment.isAvailability ? 'Available' : 'Instruments'}
+                            </span>
+                        `;
+                        cell.title = `${startMonthName} ${startYear} - ${endMonthName} ${endYear}`;
+                        rightRow.appendChild(cell);
+                        i = j;
+                    }
+                }
+                rightTbody.appendChild(rightRow);
+            });
+            leftTable.appendChild(leftTbody);
+            rightTable.appendChild(rightTbody);
+        }
+
+        function syncSplitTableRowHeights() {
+            document.querySelectorAll('.calendar-flex-container').forEach(container => {
+                const leftTable = container.querySelector('.booking-table-left');
+                const rightTable = container.querySelector('.booking-table-right');
+                if (!leftTable || !rightTable) return;
+                // Sync header rows
+                const leftHeadRows = leftTable.querySelectorAll('thead tr');
+                const rightHeadRows = rightTable.querySelectorAll('thead tr');
+                for (let i = 0; i < leftHeadRows.length; i++) {
+                    const leftRow = leftHeadRows[i];
+                    const rightRow = rightHeadRows[i];
+                    if (!leftRow || !rightRow) continue;
+                    leftRow.style.height = '';
+                    rightRow.style.height = '';
+                    const leftHeight = leftRow.getBoundingClientRect().height;
+                    const rightHeight = rightRow.getBoundingClientRect().height;
+                    const maxHeight = Math.max(leftHeight, rightHeight) + 2;
+                    leftRow.style.height = rightRow.style.height = maxHeight + 'px';
+                }
+                // Sync body rows
+                const leftRows = leftTable.querySelectorAll('tbody tr');
+                const rightRows = rightTable.querySelectorAll('tbody tr');
+                for (let i = 0; i < leftRows.length; i++) {
+                    const leftRow = leftRows[i];
+                    const rightRow = rightRows[i];
+                    if (!leftRow || !rightRow) continue;
+                    leftRow.style.height = '';
+                    rightRow.style.height = '';
+                    const leftHeight = leftRow.getBoundingClientRect().height;
+                    const rightHeight = rightRow.getBoundingClientRect().height;
+                    const maxHeight = Math.max(leftHeight, rightHeight) + 2;
+                    leftRow.style.height = rightRow.style.height = maxHeight + 'px';
+                }
+            });
+        }
+
+        // Update syncSplitTableScroll to call syncSplitTableRowHeights after scroll events
+        function syncSplitTableScroll() {
+            document.querySelectorAll('.calendar-flex-container').forEach(container => {
+                const left = container.querySelector('.calendar-left');
+                const rightScroll = container.querySelector('.calendar-right-scroll');
+                if (left && rightScroll) {
+                    rightScroll.addEventListener('scroll', () => {
+                        left.scrollTop = rightScroll.scrollTop;
+                        syncSplitTableRowHeights();
+                    });
+                    left.addEventListener('scroll', () => {
+                        rightScroll.scrollTop = left.scrollTop;
+                        syncSplitTableRowHeights();
+                    });
+                }
+            });
+        }
+
+        // Add today indicator to tables
+        function addTodayIndicator() {
+            const monthWidth = 60; // width of each month column
+            const borderWidth = 1; // border width in px
+            const startYear = 2025;
+            const today = new Date();
+            const todayYear = today.getFullYear();
+            const todayMonth = today.getMonth(); // JS months are 0-based, so Jan=0
+            const baseIndex = (todayYear - startYear) * 12 + todayMonth;
+            const daysInMonth = new Date(todayYear, todayMonth + 1, 0).getDate();
+            const dayOfMonth = today.getDate();
+            const fraction = (dayOfMonth - 1) / daysInMonth;
+            const todayIndex = baseIndex + fraction;
+            const offset = 4; // Show today about 4 months from the left edge
+
+            document.querySelectorAll('.calendar-flex-container').forEach(container => {
+                const rightScroll = container.querySelector('.calendar-right-scroll');
+                const rightTable = container.querySelector('.booking-table-right');
+                if (!rightScroll || !rightTable) return;
+                // Remove any existing indicator(s)
+                rightScroll.querySelectorAll('.today-indicator').forEach(el => el.remove());
+                // Calculate header and body height
+                const thead = rightTable.querySelector('thead');
+                const tbody = rightTable.querySelector('tbody');
+                let headerHeight = 0;
+                if (thead) {
+                    const headerRows = thead.querySelectorAll('tr');
+                    headerRows.forEach(row => {
+                        headerHeight += row.getBoundingClientRect().height;
+                    });
+                }
+                let bodyHeight = 0;
+                if (tbody) {
+                    bodyHeight = tbody.getBoundingClientRect().height;
+                }
+                // Create new today indicator
+                const indicator = document.createElement('div');
+                indicator.className = 'today-indicator';
+                indicator.style.left = (todayIndex * (monthWidth + borderWidth)) + 'px';
+                indicator.style.top = headerHeight + 'px';
+                indicator.style.height = bodyHeight + 'px';
+                indicator.style.width = '2px';
+                indicator.style.background = 'var(--today-color)';
+                indicator.style.zIndex = '100';
+                indicator.style.position = 'absolute';
+                indicator.style.pointerEvents = 'none';
+                // Add a label at the top, centered
+                const label = document.createElement('div');
+                label.textContent = 'TODAY';
+                label.style.position = 'absolute';
+                label.style.top = '-18px';
+                label.style.left = '50%';
+                label.style.transform = 'translateX(-50%)';
+                label.style.background = 'var(--today-color)';
+                label.style.color = 'white';
+                label.style.fontSize = '10px';
+                label.style.fontWeight = 'bold';
+                label.style.padding = '2px 6px';
+                label.style.borderRadius = '3px';
+                label.style.boxShadow = '0 1px 4px rgba(0,0,0,0.08)';
+                indicator.appendChild(label);
+                rightScroll.style.position = 'relative';
+                rightScroll.appendChild(indicator);
+                // Scroll so today is about 4 months from the left edge
+                const scrollTo = Math.max(0, (todayIndex - offset) * (monthWidth + borderWidth));
+                rightScroll.scrollLeft = scrollTo;
+            });
+        }
+
+        // Expand all accordions
+        function expandAll() {
+            // Expand all categories
+            document.querySelectorAll('.category-header').forEach(header => {
+                header.classList.add('active');
+                header.nextElementSibling.classList.add('active');
+            });
+            
+            // Expand all instruments
+            document.querySelectorAll('.accordion-header').forEach(header => {
+                header.classList.add('active');
+                header.nextElementSibling.classList.add('active');
+            });
+        }
+
+        // Collapse all accordions
+        function collapseAll() {
+            // Collapse all categories
+            document.querySelectorAll('.category-header').forEach(header => {
+                header.classList.remove('active');
+                header.nextElementSibling.classList.remove('active');
+            });
+            
+            // Collapse all instruments
+            document.querySelectorAll('.accordion-header').forEach(header => {
+                header.classList.remove('active');
+                header.nextElementSibling.classList.remove('active');
+            });
+        }
+
+        // Initialize tooltip functionality
+        function initTooltip() {
+            const tooltip = document.getElementById('tooltip');
+            tooltip.style.maxWidth = '400px';
+            tooltip.style.padding = '8px 12px';
+            tooltip.style.position = 'fixed';
+            tooltip.style.zIndex = '9999';
+            document.addEventListener('mouseover', function(e) {
+                // Only show tooltip for experiment merged cells (not available/empty merged)
+                const cell = e.target.closest('.booking-table-right td.booking-merged:not(.available-merged):not(.availability-merged)');
+                if (!cell) return;
+                const rightRow = cell.parentElement;
+                const rightTable = cell.closest('.booking-table-right');
+                if (!rightRow || !rightTable) return;
+                const rowIndex = Array.from(rightTable.querySelectorAll('tbody tr')).indexOf(rightRow);
+                const flexContainer = rightTable.closest('.calendar-flex-container');
+                if (!flexContainer) return;
+                const leftTable = flexContainer.querySelector('.booking-table-left');
+                if (!leftTable) return;
+                const leftRows = leftTable.querySelectorAll('tbody tr');
+                let experiment = '';
+                if (leftRows[rowIndex]) {
+                    experiment = leftRows[rowIndex].textContent.trim();
+                }
+                let description = '';
+                const instrumentKeyMatch = rightTable.id.match(/^(.*)-table-right$/);
+                if (instrumentKeyMatch) {
+                    const instrumentKey = instrumentKeyMatch[1];
+                    const pool = instrumentPools[instrumentKey];
+                    if (pool) {
+                        const expObj = pool.experiments.find(exp => exp.name === experiment);
+                        if (expObj && expObj.deployments && expObj.deployments.length > 0) {
+                            const cellColspan = parseInt(cell.getAttribute('colspan') || '1', 10);
+                            let cellStartMonthIndex = 0;
+                            let prev = cell.previousElementSibling;
+                            while (prev) {
+                                cellStartMonthIndex += parseInt(prev.getAttribute('colspan') || '1', 10);
+                                prev = prev.previousElementSibling;
+                            }
+                            for (const dep of expObj.deployments) {
+                                const depStartIdx = parseMonth(dep.start);
+                                const depEndIdx = parseMonth(dep.end);
+                                if (cellStartMonthIndex >= depStartIdx && (cellStartMonthIndex + cellColspan - 1) <= depEndIdx) {
+                                    if (dep.description) {
+                                        description = dep.description;
+                                    }
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                }
+                let tooltipContent = `<strong>${experiment}</strong>`;
+                if (description) {
+                    tooltipContent += `<br><span style='display:block;margin-top:4px;font-size:12px;max-width:380px;white-space:normal;word-break:break-word;line-height:1.3;'>${description}</span>`;
+                }
+                tooltip.innerHTML = tooltipContent;
+                tooltip.style.display = 'block';
+                // Position tooltip (fixed) so it doesn't go off the right/bottom edge
+                let left = e.clientX + 10;
+                let top = e.clientY - 10;
+                const tooltipRect = tooltip.getBoundingClientRect();
+                const viewportWidth = window.innerWidth;
+                const viewportHeight = window.innerHeight;
+                if (left + tooltipRect.width > viewportWidth - 10) {
+                    left = viewportWidth - tooltipRect.width - 10;
+                }
+                if (top + tooltipRect.height > viewportHeight - 10) {
+                    top = viewportHeight - tooltipRect.height - 10;
+                }
+                if (top < 0) top = 0;
+                tooltip.style.left = left + 'px';
+                tooltip.style.top = top + 'px';
+            });
+            document.addEventListener('mouseout', function(e) {
+                if (e.target.closest('.booking-table-right td.booking-merged:not(.available-merged):not(.availability-merged)')) {
+                    tooltip.style.display = 'none';
+                }
+            });
+            document.addEventListener('mousemove', function(e) {
+                if (tooltip.style.display === 'block' && e.target.closest('.booking-table-right td.booking-merged:not(.available-merged):not(.availability-merged)')) {
+                    let left = e.clientX + 10;
+                    let top = e.clientY - 10;
+                    const tooltipRect = tooltip.getBoundingClientRect();
+                    const viewportWidth = window.innerWidth;
+                    const viewportHeight = window.innerHeight;
+                    if (left + tooltipRect.width > viewportWidth - 10) {
+                        left = viewportWidth - tooltipRect.width - 10;
+                    }
+                    if (top + tooltipRect.height > viewportHeight - 10) {
+                        top = viewportHeight - tooltipRect.height - 10;
+                    }
+                    if (top < 0) top = 0;
+                    tooltip.style.left = left + 'px';
+                    tooltip.style.top = top + 'px';
+                }
+            });
+        }
+
+        // Initialize everything
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeSplitTables();
+            syncSplitTableRowHeights();
+            updateAccordionSubtitles();
+            updateCategorySubtitles();
+            initTooltip();
+            
+            // Add today indicator after tables are initialized
+            setTimeout(addTodayIndicator, 100);
+            
+            // Update indicator when window is resized
+            window.addEventListener('resize', function() {
+                syncSplitTableRowHeights();
+                addTodayIndicator();
+            });
+        });
+
+        // Update category subtitles with calculated statistics
+        function updateCategorySubtitles() {
+            const today = new Date();
+            const currentYear = today.getFullYear();
+            const currentMonth = today.getMonth();
+            const currentMonthStr = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}`;
+            const currentMonthIndex = parseMonth(currentMonthStr);
+            
+            // Define category mappings
+            const categoryMappings = {
+                'Seismic Recorders': ['terraSAWR', 'lpr200AUS', 'lpr200NZ', 'nanometricsCentaur'],
+                'Seismometers': ['nanometrics120sAUS', 'nanometrics120sNZ', 'nanometricsH120s', 'nanometricsP120s', 'nanometrics20s'],
+                'Short-Period Seismometers': ['le3DliteAUS', 'le3DliteNZ', 'sercelL283D'],
+                'Nodal Seismometers': ['IGU16HR3C5HzAU', 'IGU16HR3C5HzNZ', 'IGUBD3C5s'],
+                'Fibre Optic DAS': ['SilixaIDAS24', 'SilixaIDAS25', 'SilixaIDAS25NZ'],
+                'Magnetotellurics': ['MTU5C', 'EDL', 'LEMI424', 'LEMI423']
+            };
+            
+            // Update each category
+            Object.keys(categoryMappings).forEach(categoryName => {
+                const instrumentKeys = categoryMappings[categoryName];
+                let totalInstruments = 0;
+                let currentExperiments = new Set();
+                let upcomingExperiments = new Set();
+                
+                // Calculate statistics for this category
+                instrumentKeys.forEach(poolKey => {
+                    const pool = instrumentPools[poolKey];
+                    totalInstruments += pool.total;
+                    
+                    // Check experiments for current and upcoming
+                    pool.experiments.forEach(exp => {
+                        if (!exp.isAvailability) {
+                            exp.deployments.forEach(deployment => {
+                                const startIdx = parseMonth(deployment.start);
+                                const endIdx = parseMonth(deployment.end);
+                                
+                                // Current experiments (ongoing now)
+                                if (currentMonthIndex >= startIdx && currentMonthIndex <= endIdx) {
+                                    currentExperiments.add(exp.name);
+                                }
+                                
+                                // Upcoming experiments (starting in the future)
+                                if (startIdx > currentMonthIndex) {
+                                    upcomingExperiments.add(exp.name);
+                                }
+                            });
+                        }
+                    });
+                });
+                
+                // Find and update the category subtitle
+                const categoryHeaders = document.querySelectorAll('.category-header');
+                categoryHeaders.forEach(header => {
+                    const titleElement = header.querySelector('.category-title');
+                    if (titleElement && titleElement.textContent === categoryName) {
+                        const subtitleElement = header.querySelector('.category-subtitle');
+                        if (subtitleElement) {
+                            const instrumentCount = instrumentKeys.length;
+                            const currentCount = currentExperiments.size;
+                            const upcomingCount = upcomingExperiments.size;
+                            
+                            subtitleElement.innerHTML = `
+                                <span class="category-stat">${instrumentCount} instrument types</span> | 
+                                <span class="category-stat">Current Experiments: ${currentCount}</span> | 
+                                <span class="category-stat">Upcoming Experiments: ${upcomingCount}</span>
+                            `;
+                        }
+                    }
+                });
+            });
+        }
+
+        // Update accordion subtitles with detailed instrument information
+        function updateAccordionSubtitles() {
+            const today = new Date();
+            const currentYear = today.getFullYear();
+            const currentMonth = today.getMonth();
+            Object.keys(instrumentPools).forEach(poolKey => {
+                const pool = instrumentPools[poolKey];
+                const totalInstruments = pool.total;
+                const underMaintenance = pool.maintenance;
+                let currentlyDeployed = 0;
+                const currentMonthStr = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}`;
+                const currentMonthIndex = parseMonth(currentMonthStr);
+                pool.experiments.forEach(exp => {
+                    if (!exp.isAvailability) {
+                        exp.deployments.forEach(deployment => {
+                            const startIdx = parseMonth(deployment.start);
+                            const endIdx = parseMonth(deployment.end);
+                            if (currentMonthIndex >= startIdx && currentMonthIndex <= endIdx) {
+                                currentlyDeployed += deployment.count;
+                            }
+                        });
+                    }
+                });
+                const currentlyAvailable = totalInstruments - underMaintenance - currentlyDeployed;
+                // Find the accordion item for this instrument
+                const accordionItem = document.querySelector(`#${poolKey}-table-left`);
+                let subtitle;
+                if (accordionItem) {
+                    // Traverse up to .accordion-item, then find .accordion-subtitle
+                    const item = accordionItem.closest('.accordion-item');
+                    if (item) subtitle = item.querySelector('.accordion-subtitle');
+                }
+                if (subtitle) {
+                    subtitle.innerHTML = `
+                        <span class="instrument-stat">Total Instruments: ${totalInstruments}</span> | 
+                        <span class="instrument-stat">Currently Available: ${currentlyAvailable}</span> | 
+                        <span class="instrument-stat">Under Maintenance: ${underMaintenance}</span>
+                    `;
+                }
+            });
+        }
+
+        // Toggle category accordion
+        function toggleCategory(header) {
+            const content = header.nextElementSibling;
+            header.classList.toggle('active');
+            content.classList.toggle('active');
+        }
+
+        // Toggle instrument accordion
+        function toggleAccordion(header) {
+            const content = header.nextElementSibling;
+            header.classList.toggle('active');
+            content.classList.toggle('active');
+        }
+    </script>
+</body>
+</html>
