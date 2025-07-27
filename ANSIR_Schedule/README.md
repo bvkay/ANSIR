@@ -33,20 +33,21 @@ const instrumentPools = {
     instrumentKey: {
         total: 65,           // Total instruments in pool
         maintenance: 26,     // Instruments under maintenance
-        experiments: [       // Array of experiments/deployments
+        experiments: [       // Array of table rows (availability + deployments)
             {
-                name: "Available Instruments",
+                name: "Available Instruments",  // Availability row (calculated automatically)
                 isAvailability: true,
-                deployments: [] // Calculated automatically
+                deployments: [] // Empty - calculated by system
             },
             {
-                name: "Experiment Name",
+                name: "Experiment Name",        // Deployment row
+                isAvailability: false,
                 deployments: [
                     {
                         start: "2025-01",    // Start date (YYYY-MM)
                         end: "2025-09",      // End date (YYYY-MM)
                         count: 4,            // Number of instruments
-                        description: "..."   // Optional description
+                        description: "..."   // Optional description for tooltip
                     }
                 ]
             }
@@ -79,12 +80,21 @@ const instrumentPools = {
 }
 ```
 
-#### Experiment Object
+#### Experiment/Deployment Row Object
 ```javascript
 {
-    name: "Experiment Name",    // Display name
-    isAvailability: false,     // true for availability row
-    deployments: [...]         // Array of deployment objects
+    name: "Experiment Name",    // Display name for table row
+    isAvailability: false,     // true for availability row, false for deployments
+    deployments: [...]         // Array of deployment objects (empty for availability)
+}
+```
+
+#### Availability Row Object
+```javascript
+{
+    name: "Available Instruments",  // Always "Available Instruments"
+    isAvailability: true,          // Must be true
+    deployments: []                // Empty array - calculated automatically
 }
 ```
 
