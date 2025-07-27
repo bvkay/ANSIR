@@ -322,8 +322,24 @@ Tooltips are styled with:
 - **Edge Detection**: Automatically repositions to stay within viewport
 
 ### Today Indicator
-The red "TODAY" line position is calculated automatically based on current date. Position offset can be adjusted in `addTodayIndicator()` function.
+The red "TODAY" line position is calculated automatically based on current date. The indicator is positioned so that the current date appears approximately **4 months from the left edge** of the calendar view.
 
+**Key Features:**
+- **Automatic Positioning**: Calculated based on current date relative to `SCHEDULE_CONFIG.startYear`
+- **Visual Offset**: Positioned 4 months from the left edge for optimal viewing
+- **Dynamic Updates**: Adjusts when year configuration changes
+- **Scroll Behavior**: Automatically scrolls the calendar to show today's position
+
+**Customization:**
+To change the offset position, modify the `offset` variable in `addTodayIndicator()`:
+```javascript
+const offset = 4; // Change this value to adjust position from left edge
+```
+
+**Calculation Details:**
+- Uses current date to determine exact position within the year
+- Accounts for day-of-month for precise positioning
+- Automatically scrolls calendar to show today's position on page load
 ### Year Configuration
 
 #### Centralized Configuration
