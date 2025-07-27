@@ -20,7 +20,7 @@ The schedule displays instrument availability and deployments across a 36-month 
 ## Architecture
 
 ### File Structure
-- `ANSIR_Schedule.html` - Main application file containing HTML, CSS, and JavaScript
+- `ANSIR_Schedule_date.html` - Main application file containing HTML, CSS, and JavaScript
 - `README.md` - This documentation file
 
 ### Key Components
@@ -326,36 +326,40 @@ The red "TODAY" line position is calculated automatically based on current date.
 
 ### Year Configuration
 
+#### Centralized Configuration
+The schedule uses a centralized configuration object `SCHEDULE_CONFIG` to manage year ranges:
+
+```javascript
+const SCHEDULE_CONFIG = {
+    startYear: 2025,
+    endYear: 2027,
+    get totalMonths() {
+        return (this.endYear - this.startYear + 1) * 12;
+    },
+    get years() {
+        const years = [];
+        for (let year = this.startYear; year <= this.endYear; year++) {
+            years.push(year);
+        }
+        return years;
+    }
+};
+```
+
 #### Changing Year Range
 
 ##### Moving to Different Years (e.g., 2025-2027 → 2026-2028)
-To shift the entire calendar to different years:
+To shift the entire calendar to different years, simply update the configuration:
 
-1. **Update Year Headers** in `generateSplitTableHeaders()`:
 ```javascript
-// Change from:
-for (let year = 2025; year <= 2027; year++) {
-// To:
-for (let year = 2026; year <= 2028; year++) {
+const SCHEDULE_CONFIG = {
+    startYear: 2026,  // Changed from 2025
+    endYear: 2028,    // Changed from 2027
+    // ... rest remains the same
+};
 ```
 
-2. **Update Base Year** in `parseMonth()` function:
-```javascript
-// Change from:
-return (year - 2025) * 12 + (month - 1);
-// To:
-return (year - 2026) * 12 + (month - 1);
-```
-
-3. **Update Today Indicator** base year in `addTodayIndicator()`:
-```javascript
-// Change from:
-const startYear = 2025;
-// To:
-const startYear = 2026;
-```
-
-4. **Update All Deployment Dates** in `instrumentPools`:
+**Then update all deployment dates** in `instrumentPools`:
 ```javascript
 // Change all deployment dates from 2025-2027 to 2026-2028
 deployments: [
@@ -370,43 +374,19 @@ deployments: [
 ##### Extending Timeframe (e.g., 2025-2027 → 2025-2029)
 To add more years to the calendar:
 
-1. **Update Year Loop** in `generateSplitTableHeaders()`:
 ```javascript
-// Change from:
-for (let year = 2025; year <= 2027; year++) {
-// To:
-for (let year = 2025; year <= 2029; year++) {
+const SCHEDULE_CONFIG = {
+    startYear: 2025,  // Keep same start year
+    endYear: 2029,    // Changed from 2027
+    // ... rest remains the same
+};
 ```
 
-2. **Update Month Headers** loop:
-```javascript
-// Change from:
-for (let year = 2025; year <= 2027; year++) {
-// To:
-for (let year = 2025; year <= 2029; year++) {
-```
-
-3. **Update Array Sizes** in `calculateAvailableInstruments()`:
-```javascript
-// Change from:
-const monthlyDeployments = new Array(36).fill(0); // 36 months (3 years)
-// To:
-const monthlyDeployments = new Array(60).fill(0); // 60 months (5 years)
-```
-
-4. **Update Availability Calculation** loop:
-```javascript
-// Change from:
-while (i < 36) {
-// To:
-while (i < 60) {
-```
-
-5. **Update Today Indicator** calculations:
-```javascript
-// Update baseIndex calculation to account for longer timeframe
-const baseIndex = (todayYear - startYear) * 12 + todayMonth;
-```
+**Benefits of Centralized Configuration:**
+- **Single Point of Change**: Update only `SCHEDULE_CONFIG` to change year ranges
+- **Automatic Calculations**: `totalMonths` and `years` are calculated automatically
+- **Consistent Usage**: All functions reference the same configuration
+- **Reduced Errors**: No risk of missing hardcoded values
 
 #### Impact of Year Changes
 
@@ -426,11 +406,8 @@ const baseIndex = (todayYear - startYear) * 12 + todayMonth;
 
 When changing years or extending timeframe:
 
-- [ ] Update all year loops in `generateSplitTableHeaders()`
-- [ ] Update `parseMonth()` base year calculation
-- [ ] Update `addTodayIndicator()` startYear variable
-- [ ] Update array sizes in `calculateAvailableInstruments()`
-- [ ] Update all deployment dates in `instrumentPools`
+- [ ] Update `SCHEDULE_CONFIG.startYear` and/or `SCHEDULE_CONFIG.endYear`
+- [ ] Update all deployment dates in `instrumentPools` to match new year range
 - [ ] Test today indicator positioning
 - [ ] Verify current/upcoming experiment categorization
 - [ ] Check table rendering and scrolling
