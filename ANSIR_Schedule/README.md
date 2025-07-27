@@ -324,6 +324,118 @@ Tooltips are styled with:
 ### Today Indicator
 The red "TODAY" line position is calculated automatically based on current date. Position offset can be adjusted in `addTodayIndicator()` function.
 
+### Year Configuration
+
+#### Changing Year Range
+
+##### Moving to Different Years (e.g., 2025-2027 → 2026-2028)
+To shift the entire calendar to different years:
+
+1. **Update Year Headers** in `generateSplitTableHeaders()`:
+```javascript
+// Change from:
+for (let year = 2025; year <= 2027; year++) {
+// To:
+for (let year = 2026; year <= 2028; year++) {
+```
+
+2. **Update Base Year** in `parseMonth()` function:
+```javascript
+// Change from:
+return (year - 2025) * 12 + (month - 1);
+// To:
+return (year - 2026) * 12 + (month - 1);
+```
+
+3. **Update Today Indicator** base year in `addTodayIndicator()`:
+```javascript
+// Change from:
+const startYear = 2025;
+// To:
+const startYear = 2026;
+```
+
+4. **Update All Deployment Dates** in `instrumentPools`:
+```javascript
+// Change all deployment dates from 2025-2027 to 2026-2028
+deployments: [
+    {
+        start: "2026-01",  // Changed from "2025-01"
+        end: "2026-09",    // Changed from "2025-09"
+        count: 4
+    }
+]
+```
+
+##### Extending Timeframe (e.g., 2025-2027 → 2025-2029)
+To add more years to the calendar:
+
+1. **Update Year Loop** in `generateSplitTableHeaders()`:
+```javascript
+// Change from:
+for (let year = 2025; year <= 2027; year++) {
+// To:
+for (let year = 2025; year <= 2029; year++) {
+```
+
+2. **Update Month Headers** loop:
+```javascript
+// Change from:
+for (let year = 2025; year <= 2027; year++) {
+// To:
+for (let year = 2025; year <= 2029; year++) {
+```
+
+3. **Update Array Sizes** in `calculateAvailableInstruments()`:
+```javascript
+// Change from:
+const monthlyDeployments = new Array(36).fill(0); // 36 months (3 years)
+// To:
+const monthlyDeployments = new Array(60).fill(0); // 60 months (5 years)
+```
+
+4. **Update Availability Calculation** loop:
+```javascript
+// Change from:
+while (i < 36) {
+// To:
+while (i < 60) {
+```
+
+5. **Update Today Indicator** calculations:
+```javascript
+// Update baseIndex calculation to account for longer timeframe
+const baseIndex = (todayYear - startYear) * 12 + todayMonth;
+```
+
+#### Impact of Year Changes
+
+##### Moving Years (2025-2027 → 2026-2028)
+- **Today Indicator**: Will automatically adjust to new base year
+- **Current/Upcoming Experiments**: Will recategorize based on new timeline
+- **Availability Calculations**: Will remain accurate with new dates
+- **Tooltips**: Will show correct date ranges
+
+##### Extending Timeframe (2025-2027 → 2025-2029)
+- **Table Width**: Will increase significantly (36 → 60 months)
+- **Performance**: May impact load time with larger tables
+- **Scrolling**: Horizontal scroll will be longer
+- **Today Indicator**: Will still position correctly within extended range
+
+#### Year Change Checklist
+
+When changing years or extending timeframe:
+
+- [ ] Update all year loops in `generateSplitTableHeaders()`
+- [ ] Update `parseMonth()` base year calculation
+- [ ] Update `addTodayIndicator()` startYear variable
+- [ ] Update array sizes in `calculateAvailableInstruments()`
+- [ ] Update all deployment dates in `instrumentPools`
+- [ ] Test today indicator positioning
+- [ ] Verify current/upcoming experiment categorization
+- [ ] Check table rendering and scrolling
+- [ ] Validate tooltip date displays
+
 ## Dynamic Features
 
 ### Dynamic Calculations
