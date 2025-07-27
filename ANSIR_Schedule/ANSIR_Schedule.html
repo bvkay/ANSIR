@@ -1658,12 +1658,28 @@
             }
         };
 
+        // Centralized year configuration
+        const SCHEDULE_CONFIG = {
+            startYear: 2025,
+            endYear: 2027,
+            get totalMonths() {
+                return (this.endYear - this.startYear + 1) * 12;
+            },
+            get years() {
+                const years = [];
+                for (let year = this.startYear; year <= this.endYear; year++) {
+                    years.push(year);
+                }
+                return years;
+            }
+        };
+
         const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
         // Calculate available instruments
         function calculateAvailableInstruments(pool) {
             const totalAvailable = pool.total - pool.maintenance;
-            const monthlyDeployments = new Array(36).fill(0); // 36 months (2025-2027)
+            const monthlyDeployments = new Array(SCHEDULE_CONFIG.totalMonths).fill(0);
             
             // Calculate deployments per month
             pool.experiments.forEach(exp => {
@@ -1671,7 +1687,7 @@
                     exp.deployments.forEach(dep => {
                         const startIdx = parseMonth(dep.start);
                         const endIdx = parseMonth(dep.end);
-                        for (let i = startIdx; i <= endIdx && i < 36; i++) {
+                        for (let i = startIdx; i <= endIdx && i < SCHEDULE_CONFIG.totalMonths; i++) {
                             monthlyDeployments[i] += dep.count;
                         }
                     });
@@ -1681,16 +1697,16 @@
             // Calculate available instruments per period
             const availablePeriods = [];
             let i = 0;
-            while (i < 36) {
+            while (i < SCHEDULE_CONFIG.totalMonths) {
                 const available = totalAvailable - monthlyDeployments[i];
                 let j = i;
-                while (j < 36 && (totalAvailable - monthlyDeployments[j]) === available) {
+                while (j < SCHEDULE_CONFIG.totalMonths && (totalAvailable - monthlyDeployments[j]) === available) {
                     j++;
                 }
                 
-                const startYear = 2025 + Math.floor(i / 12);
+                const startYear = SCHEDULE_CONFIG.startYear + Math.floor(i / 12);
                 const startMonth = (i % 12) + 1;
-                const endYear = 2025 + Math.floor((j - 1) / 12);
+                const endYear = SCHEDULE_CONFIG.startYear + Math.floor((j - 1) / 12);
                 const endMonth = ((j - 1) % 12) + 1;
                 
                 availablePeriods.push({
@@ -1714,7 +1730,7 @@
         // Parse month string to absolute month index
         function parseMonth(monthStr) {
             const [year, month] = monthStr.split('-').map(Number);
-            return (year - 2025) * 12 + (month - 1);
+            return (year - SCHEDULE_CONFIG.startYear) * 12 + (month - 1);
         }
 
         // Replace the old initializeTables and generateExperimentRows with the following:
@@ -1755,23 +1771,23 @@
             const rightThead = document.createElement('thead');
             // Year row
             const yearRow = document.createElement('tr');
-            for (let year = 2025; year <= 2027; year++) {
+            SCHEDULE_CONFIG.years.forEach(year => {
                 const yearTh = document.createElement('th');
                 yearTh.className = 'year-divider';
                 yearTh.colSpan = 12;
                 yearTh.textContent = year;
                 yearRow.appendChild(yearTh);
-            }
+            });
             // Month row
             const monthRow = document.createElement('tr');
-            for (let year = 2025; year <= 2027; year++) {
+            SCHEDULE_CONFIG.years.forEach(year => {
                 months.forEach(month => {
                     const monthTh = document.createElement('th');
                     monthTh.className = 'month-header';
                     monthTh.textContent = month;
                     monthRow.appendChild(monthTh);
                 });
-            }
+            });
             rightThead.appendChild(yearRow);
             rightThead.appendChild(monthRow);
             rightTable.appendChild(rightThead);
@@ -1792,21 +1808,21 @@
                 // Right table row (months/years)
                 const rightRow = document.createElement('tr');
                 // Build monthStatus array for this experiment
-                const monthStatus = new Array(36).fill('available');
+                const monthStatus = new Array(SCHEDULE_CONFIG.totalMonths).fill('available');
                 experiment.deployments.forEach(deployment => {
                     const startIdx = parseMonth(deployment.start);
                     const endIdx = parseMonth(deployment.end);
-                    for (let i = startIdx; i <= endIdx && i < 36; i++) {
+                    for (let i = startIdx; i <= endIdx && i < SCHEDULE_CONFIG.totalMonths; i++) {
                         monthStatus[i] = deployment;
                     }
                 });
                 // Generate cells for right table
                 let i = 0;
-                while (i < 36) {
+                while (i < SCHEDULE_CONFIG.totalMonths) {
                     if (monthStatus[i] === 'available') {
                         // Merge consecutive available cells
                         let j = i;
-                        while (j < 36 && monthStatus[j] === 'available') j++;
+                        while (j < SCHEDULE_CONFIG.totalMonths && monthStatus[j] === 'available') j++;
                         const cell = document.createElement('td');
                         cell.setAttribute('colspan', j - i);
                         cell.className = 'available-merged';
@@ -1816,7 +1832,7 @@
                         // Merge consecutive deployment cells
                         const deployment = monthStatus[i];
                         let j = i;
-                        while (j < 36 && monthStatus[j] === deployment) j++;
+                        while (j < SCHEDULE_CONFIG.totalMonths && monthStatus[j] === deployment) j++;
                         const cell = document.createElement('td');
                         cell.setAttribute('colspan', j - i);
                         cell.className = experiment.isAvailability ?
@@ -1824,8 +1840,8 @@
                             'booking-merged deployed';
                         const startMonthName = months[i % 12];
                         const endMonthName = months[(j - 1) % 12];
-                        const startYear = 2025 + Math.floor(i / 12);
-                        const endYear = 2025 + Math.floor((j - 1) / 12);
+                        const startYear = SCHEDULE_CONFIG.startYear + Math.floor(i / 12);
+                        const endYear = SCHEDULE_CONFIG.startYear + Math.floor((j - 1) / 12);
                         cell.innerHTML = `
                             <span class="instrument-count">${deployment.count}</span>
                             <span class="instrument-label">
@@ -1901,11 +1917,10 @@
         function addTodayIndicator() {
             const monthWidth = 60; // width of each month column
             const borderWidth = 1; // border width in px
-            const startYear = 2025;
             const today = new Date();
             const todayYear = today.getFullYear();
             const todayMonth = today.getMonth(); // JS months are 0-based, so Jan=0
-            const baseIndex = (todayYear - startYear) * 12 + todayMonth;
+            const baseIndex = (todayYear - SCHEDULE_CONFIG.startYear) * 12 + todayMonth;
             const daysInMonth = new Date(todayYear, todayMonth + 1, 0).getDate();
             const dayOfMonth = today.getDate();
             const fraction = (dayOfMonth - 1) / daysInMonth;
