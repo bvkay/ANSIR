@@ -1,6 +1,6 @@
 # ANSIR Instrument Schedule Display
 
-A web-based schedule interface for viewing ANSIR (Australian National Seismic Imaging Resource) instrument deployments and availability across multiple instrument categories. **This is a read-only display of current and planned deployments - it is not a booking system.**
+This is a copy of the code used to develop the web-based schedule interface for viewing ANSIR (Australian National Seismic Imaging Resource) instrument deployments and availability across multiple instrument categories. **This is a read-only display of current and planned deployments - it is not a booking system.**
 
 ## Table of Contents
 
